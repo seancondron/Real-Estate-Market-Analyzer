@@ -1,8 +1,8 @@
 # CS Project
 
 ## Stack
-- **Frontend**: 
-- **Backend**: Pandas, Numpy, Scikit-learn
+- **Frontend**: TBD
+- **Backend**: Pandas, Numpy, Scikit-learn, TBD
 - **Database**: Supabase
 
 ## Setup
