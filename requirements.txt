@@ -3,5 +3,5 @@ pandas
 numpy
 scikit-learn
 joblib
-supabase
+pymongo[srv]
 python-dotenv
