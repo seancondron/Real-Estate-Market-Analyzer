@@ -3,7 +3,7 @@
 ## Stack
 - **Frontend**: TBD
 - **Backend**: Pandas, Numpy, Scikit-learn, TBD
-- **Database**: Supabase
+- **Database**: MongoDB
 
 ## Setup
 
