@@ -50,11 +50,6 @@ A DFW home price prediction model built with Python, scikit-learn, and MongoDB.
    python3 -m backend.models.train --model gradient_boosting
    ```
 
-6. Run the app
-   ```bash
-   streamlit run frontend/app.py
-   ```
-
 ## Testing the Model
 
 After training, run this to test a price prediction:
