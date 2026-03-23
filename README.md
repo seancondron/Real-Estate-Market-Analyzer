@@ -33,7 +33,7 @@ A DFW home price prediction model built with Python, scikit-learn, and MongoDB.
    
    # Add your MongoDB URI to .env:
    # MONGODB_URI=your_mongodb_atlas_connection_string
-   (ask a project team member for this)
+   # (ask a project team member for this)
    ```
 
 5. Train the model
@@ -43,17 +43,16 @@ A DFW home price prediction model built with Python, scikit-learn, and MongoDB.
    > Training data is already in MongoDB Atlas, so no data download is required.
    > This generates `backend/models/saved/model.pkl` and `features.pkl` locally.
 
+   To train with a specific model:
+   ```bash
+   python3 -m backend.models.train --model random_forest
+   python3 -m backend.models.train --model gradient_boosting
+   ```
+
 6. Run the app
    ```bash
    streamlit run frontend/app.py
    ```
-
-
-To train with a specific model:
-```bash
-python3 -m backend.models.train --model random_forest
-python3 -m backend.models.train --model gradient_boosting
-```
 
 ## Testing the Model
 
@@ -81,5 +80,6 @@ print(f'Predicted price: \${result:,.0f}')
 "
 ```
 
-Expected output: `Predicted price: $XXX,XXX`
+Expected output: 
+`Predicted price: $XXX,XXX`
 
