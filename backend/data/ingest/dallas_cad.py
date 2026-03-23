@@ -1,5 +1,5 @@
 """
-Dallas Central Appraisal District — Residential Property Records
+Dallas Central Appraisal District - Residential Property Records
 Source: https://www.dallascad.org/AcctDetailRes.aspx  (bulk export)
 Download: Request the "Residential" export from dallascad.org → Data Downloads
 
@@ -22,7 +22,7 @@ import pandas as pd
 
 from backend.db.mongodb import db
 
-# Dallas CAD column names vary by export year — adjust if needed
+# Dallas CAD column names vary by export year - adjust if needed
 ACCOUNT_COL_MAP = {
     "ACCOUNT_NUM":   "account_num",
     "SITUS_NUM":     "street_num",
@@ -102,7 +102,7 @@ def ingest(account_file: str, res_file: str) -> None:
         else:
             skipped += 1
 
-    print(f"Done — inserted: {inserted}, skipped (duplicates): {skipped}")
+    print(f"Done - inserted: {inserted}, skipped (duplicates): {skipped}")
 
 
 if __name__ == "__main__":

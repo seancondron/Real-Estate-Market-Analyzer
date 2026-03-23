@@ -1,5 +1,5 @@
 """
-Tarrant Appraisal District — Residential Property Records
+Tarrant Appraisal District - Residential Property Records
 Source: https://www.tad.org/data-downloads/
 Download: Request residential export (CSV) from tad.org
 
@@ -14,7 +14,7 @@ import pandas as pd
 
 from backend.db.mongodb import db
 
-# Tarrant CAD column names — adjust if your export differs
+# Tarrant CAD column names - adjust if your export differs
 COLUMN_MAP = {
     "SitusAddress":    "address",
     "SitusCity":       "city",
@@ -71,7 +71,7 @@ def ingest(file_path: str) -> None:
         else:
             skipped += 1
 
-    print(f"Done — inserted: {inserted}, skipped (duplicates): {skipped}")
+    print(f"Done - inserted: {inserted}, skipped (duplicates): {skipped}")
 
 
 if __name__ == "__main__":

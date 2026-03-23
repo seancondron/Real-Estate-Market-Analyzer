@@ -1,21 +1,16 @@
 """
-US Census Bureau — ACS 5-Year Estimates (Zip Code Demographics)
+US Census Bureau - ACS 5-Year Estimates (Zip Code Demographics)
 Source: https://data.census.gov
 Download:
   1. Go to data.census.gov
-  2. Search "S1901" (income) and "S0101" (population) → Filter by Texas zip codes
-  3. Download as CSV
+  2. Search "S1901"
+  3. Under Geography, select Zip Code Tabulation Area (ZCTA) → All ZCTAs in Texas
+  4. Download as CSV
 
-Or use the direct ACS table downloads:
-  https://www.census.gov/acs/www/data/data-tables-and-tools/
-
-Expected CSV columns (ACS S1901 / S0101 combined or separate):
-  - zip_code (or GEO_ID)
-  - median_income
-  - population
+Expected format: ACS S1901 export with GEO_ID column (e.g. "860Z200US75001")
 
 Usage:
-    python3 -m backend.data.ingest.census_zip --file /path/to/acs_zip_data.csv
+    python3 -m backend.data.ingest.census_zip --file /path/to/ACSST5Y2024.S1901-Data.csv
 """
 
 import argparse
@@ -24,30 +19,28 @@ from datetime import datetime, timezone
 import pandas as pd
 
 from backend.db.mongodb import db
-from backend.db.schema import DFW_CITIES
 
-# DFW zip codes (common ones — Census data is keyed by zip, not city)
-# The script filters by matching zips that appear in DFW properties already ingested
-COLUMN_MAP = {
-    "zip_code":      "zip_code",
-    "ZIP":           "zip_code",
-    "ZCTA":          "zip_code",
-    "median_income": "median_income",
-    "MedianIncome":  "median_income",
-    "population":    "population",
-    "Population":    "population",
+# ACS S1901 column codes
+ACS_COL_MAP = {
+    "S1901_C01_012E": "median_income",  # Estimate: Households: Median income (dollars)
+    "S1901_C01_001E": "population",     # Estimate: Households: Total
 }
 
 
 def ingest(file_path: str) -> None:
     print(f"Loading {file_path}...")
-    df = pd.read_csv(file_path, low_memory=False, dtype=str)
+    # Row 0 is column codes, row 1 is human-readable labels - skip row 1
+    df = pd.read_csv(file_path, low_memory=False, dtype=str, skiprows=[1])
 
-    # Normalize column names
-    df.rename(columns={c: COLUMN_MAP[c] for c in df.columns if c in COLUMN_MAP}, inplace=True)
+    # Extract zip code from GEO_ID e.g. "860Z200US75001" → "75001"
+    if "GEO_ID" not in df.columns:
+        raise ValueError("Could not find GEO_ID column in Census file")
+    df["zip_code"] = df["GEO_ID"].str.extract(r"(\d{5})$")
 
-    if "zip_code" not in df.columns:
-        raise ValueError("Could not find a zip code column. Expected: zip_code, ZIP, or ZCTA")
+    # Rename ACS columns to internal names
+    df.rename(columns=ACS_COL_MAP, inplace=True)
+
+    df = df.dropna(subset=["zip_code"])
 
     df["zip_code"] = df["zip_code"].astype(str).str.strip().str.zfill(5)
 
@@ -79,7 +72,7 @@ def ingest(file_path: str) -> None:
         else:
             skipped += 1
 
-    print(f"Done — inserted: {inserted}, updated: {skipped}")
+    print(f"Done - inserted: {inserted}, updated: {skipped}")
 
 
 if __name__ == "__main__":

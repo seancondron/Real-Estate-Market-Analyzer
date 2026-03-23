@@ -1,13 +1,11 @@
-import pandas as pd
 from backend.db.mongodb import db
-from backend.db.schema import DFW_CITIES, RESIDENTIAL_TYPES
+from backend.db.schema import DFW_CITIES
 
 
 def fetch_properties(zip_codes: list[str] | None = None) -> list[dict]:
     """Fetch DFW residential home listings from MongoDB."""
     query = {
         "city": {"$in": [c.title() for c in DFW_CITIES]},
-        "property_type": {"$in": list(RESIDENTIAL_TYPES)},
     }
     if zip_codes:
         query["zip_code"] = {"$in": [str(z).zfill(5) for z in zip_codes]}

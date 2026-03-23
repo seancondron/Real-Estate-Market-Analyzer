@@ -1,5 +1,5 @@
 """
-Kaggle — USA Real Estate Dataset
+Kaggle - USA Real Estate Dataset
 Source: https://www.kaggle.com/datasets/ahmedshahriarsakib/usa-real-estate-dataset
 Download: realtor-data.zip.csv  (or realtor-data.csv)
 
@@ -88,7 +88,7 @@ def ingest(file_path: str) -> None:
         else:
             skipped += 1
 
-    print(f"Done — inserted: {inserted}, skipped (duplicates): {skipped}")
+    print(f"Done - inserted: {inserted}, skipped (duplicates): {skipped}")
 
 
 if __name__ == "__main__":
