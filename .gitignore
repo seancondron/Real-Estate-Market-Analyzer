@@ -201,6 +201,9 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Trained model files
+backend/models/saved/
+
 # Marimo
 marimo/_static/
 marimo/_lsp/

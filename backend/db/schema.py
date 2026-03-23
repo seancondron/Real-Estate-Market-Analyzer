@@ -16,7 +16,7 @@ DFW_CITIES = {
     "white settlement", "saginaw", "haslet",
 }
 
-# Residential property types — non-residential (commercial, land, etc.) are excluded
+# Residential property types - non-residential (commercial, land, etc.) are excluded
 RESIDENTIAL_TYPES = {"single family", "townhouse", "condo", "multi-family"}
 
 
@@ -37,7 +37,7 @@ def setup_schema():
                         "city":           {"bsonType": "string"},
                         "state":          {"bsonType": "string", "enum": ["TX"]},
                         "zip_code":       {"bsonType": "string"},
-                        # Homes only — single family, townhouse, condo, multi-family
+                        # Homes only - single family, townhouse, condo, multi-family
                         "property_type":  {"bsonType": ["string", "null"]},
                         "listing_type":   {"bsonType": ["string", "null"]},
                         "date_posted":    {"bsonType": ["string", "null"]},
@@ -100,7 +100,7 @@ def setup_schema():
 
     # --- crime_stats collection ---
     # Source: FBI Crime Data Explorer API (free key at https://cde.fbi.gov/api)
-    # Keyed on (city, state, year) — city-level annual crime rates
+    # Keyed on (city, state, year) - city-level annual crime rates
     if "crime_stats" not in existing:
         db.create_collection(
             "crime_stats",
@@ -154,7 +154,7 @@ def setup_schema():
                     "bsonType": "object",
                     "required": ["nces_id", "name", "city", "state"],
                     "properties": {
-                        "nces_id":          {"bsonType": "string"},   # National Center for Ed Stats ID — stable unique key
+                        "nces_id":          {"bsonType": "string"},   # National Center for Ed Stats ID - stable unique key
                         "name":             {"bsonType": "string"},
                         "city":             {"bsonType": "string"},
                         "state":            {"bsonType": "string"},
