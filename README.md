@@ -30,10 +30,9 @@ A DFW home price prediction model built with Python, scikit-learn, and MongoDB.
 4. Set up environment variables
    ```bash
    cp .env.example .env
+   
    # Add your MongoDB URI to .env:
    # MONGODB_URI=your_mongodb_atlas_connection_string
-   # MONGODB_DB=real_estate
-
    (ask a project team member for this)
    ```
 
