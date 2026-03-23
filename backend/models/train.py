@@ -10,7 +10,7 @@ from backend.data.processor import build_features
 
 
 def save_model(model, filename: str):
-    """Save a trained model to disk."""
+    """Save a trained model locally (disk)."""
     path = os.path.join(os.path.dirname(__file__), "saved", filename)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     joblib.dump(model, path)
