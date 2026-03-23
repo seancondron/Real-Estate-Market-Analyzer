@@ -56,3 +56,30 @@ python3 -m backend.models.train --model random_forest
 python3 -m backend.models.train --model gradient_boosting
 ```
 
+## Testing the Model
+
+After training, run this to test a price prediction:
+
+```python
+from backend.services.predict import run_prediction
+from datetime import date
+
+result = run_prediction(
+    input_data={
+        "beds": 4,
+        "baths": 2.5,
+        "sqft": 2500,
+        "year_built": 2005,
+        "lot_sqft": 8000,
+        "zip_code": "75024",
+        "garage": True,
+        "property_type": "single family"
+    },
+    target_date=date(2026, 4, 1)  # date(year, month, day) April 1 2026 (optional, defaults to one month in teh future)
+)
+
+print(f"Predicted price: ${result:,.0f}")
+```
+
+Expected output: `Predicted price: $XXX,XXX`
+
