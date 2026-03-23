@@ -60,24 +60,25 @@ python3 -m backend.models.train --model gradient_boosting
 After training, run this to test a price prediction:
 
 ```python
+python3 -c "
 from backend.services.predict import run_prediction
 from datetime import date
 
 result = run_prediction(
     input_data={
-        "beds": 4,
-        "baths": 2.5,
-        "sqft": 2500,
-        "year_built": 2005,
-        "lot_sqft": 8000,
-        "zip_code": "75024",
-        "garage": True,
-        "property_type": "single family"
+        'beds': 3,
+        'baths': 2,
+        'sqft': 1800,
+        'year_built': 2000,
+        'lot_sqft': 6000,
+        'zip_code': '75024',
+        'garage': True,
+        'property_type': 'single family'
     },
-    target_date=date(2026, 4, 1)  # date(year, month, day) April 1 2026 (optional, defaults to one month in teh future)
+    target_date=date(2026, 4, 1)
 )
-
-print(f"Predicted price: ${result:,.0f}")
+print(f'Predicted price: \${result:,.0f}')
+"
 ```
 
 Expected output: `Predicted price: $XXX,XXX`
