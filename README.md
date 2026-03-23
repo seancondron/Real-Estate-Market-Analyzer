@@ -6,7 +6,7 @@ A DFW home price prediction model built with Python, scikit-learn, and MongoDB.
 - **Frontend**: TBD
 - **Backend**: Pandas, Numpy, Scikit-learn
 - **Database**: MongoDB Atlas
-- **ML Model**: HistGradientBoostingRegressor (scikit-learn)
+- **ML Model**: TBD
 
 ## Setup
 
