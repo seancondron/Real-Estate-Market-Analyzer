@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dallas Real Estate Market Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>Dallas-Fort Worth Real Estate Market Analyzer</h1>
+</header>
+
+<div class="container">
+
+  <div class="controls">
+
+    <!-- Time window -->
+    <div class="control-group">
+      <label>History Start</label>
+      <select id="sel-start">
+        <option>2022-Q1</option><option>2022-Q2</option><option>2022-Q3</option><option>2022-Q4</option>
+        <option>2023-Q1</option><option>2023-Q2</option><option>2023-Q3</option><option>2023-Q4</option>
+        <option>2024-Q1</option><option>2024-Q2</option><option>2024-Q3</option><option>2024-Q4</option>
+        <option>2025-Q1</option><option>2025-Q2</option><option>2025-Q3</option><option>2025-Q4</option>
+        <option>2026-Q1</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label>History End</label>
+      <select id="sel-end">
+        <option>2022-Q1</option><option>2022-Q2</option><option>2022-Q3</option><option>2022-Q4</option>
+        <option>2023-Q1</option><option>2023-Q2</option><option>2023-Q3</option><option>2023-Q4</option>
+        <option>2024-Q1</option><option>2024-Q2</option><option>2024-Q3</option><option>2024-Q4</option>
+        <option>2025-Q1</option><option>2025-Q2</option><option>2025-Q3</option><option>2025-Q4</option>
+        <option selected>2026-Q1</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label>Forecast Quarters</label>
+      <select id="sel-periods">
+        <option value="2">2 quarters</option>
+        <option value="4" selected>4 quarters</option>
+        <option value="6">6 quarters</option>
+        <option value="8">8 quarters</option>
+      </select>
+    </div>
+
+    <div class="controls-divider"></div>
+
+    <!-- Market segment filters -->
+    <div class="control-group">
+      <label>Property Type</label>
+      <select id="f-type">
+        <option value="all">All Types</option>
+        <option value="single-family">Single Family</option>
+        <option value="condo">Condo</option>
+        <option value="townhouse">Townhouse</option>
+        <option value="multi-family">Multi-Family</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label>Bedrooms</label>
+      <select id="f-beds">
+        <option value="all">All</option>
+        <option value="1">1 bed</option>
+        <option value="2">2 beds</option>
+        <option value="3">3 beds</option>
+        <option value="4">4 beds</option>
+        <option value="5+">5+ beds</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label>Bathrooms</label>
+      <select id="f-baths">
+        <option value="all">All</option>
+        <option value="1">1 bath</option>
+        <option value="2">2 baths</option>
+        <option value="3">3 baths</option>
+        <option value="4+">4+ baths</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label>Price Tier</label>
+      <select id="f-tier">
+        <option value="all">All Prices</option>
+        <option value="entry">Entry (&lt; $300K)</option>
+        <option value="mid">Mid ($300K – $500K)</option>
+        <option value="upper">Upper ($500K – $800K)</option>
+        <option value="luxury">Luxury (&gt; $800K)</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label>Neighborhood</label>
+      <select id="f-neighborhood">
+        <option value="all">All DFW</option>
+        <option value="downtown">Downtown Dallas</option>
+        <option value="uptown">Uptown</option>
+        <option value="lakewood">Lakewood</option>
+        <option value="preston-hollow">Preston Hollow</option>
+        <option value="bishop-arts">Bishop Arts</option>
+        <option value="frisco">Frisco</option>
+        <option value="plano">Plano</option>
+        <option value="mckinney">McKinney</option>
+      </select>
+    </div>
+
+    <div class="controls-divider"></div>
+
+    <!-- Macro scenario -->
+    <div class="control-group">
+      <label>Rate Scenario</label>
+      <select id="sel-rate">
+        <option value="current">Rates Hold</option>
+        <option value="falling">Rates Fall (-0.5/qtr)</option>
+        <option value="rising">Rates Rise (+0.4/qtr)</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label>Geopolitical Stability</label>
+      <div class="slider-row">
+        <input type="range" id="geo-risk" min="-1" max="1" step="0.1" value="0">
+        <span class="range-val" id="geo-val">Neutral</span>
+      </div>
+    </div>
+
+    <button class="btn" id="run-btn" onclick="runAnalysis()">Run Analysis</button>
+
+  </div>
+
+  <!-- Active segment banner — only shown when filters are active -->
+  <div class="segment-bar" id="segment-bar" style="display:none">
+    Filtered view: <span id="segment-desc"></span>
+  </div>
+
+  <!-- KPI stat cards -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Median Price</div>
+      <div class="stat-value" id="s-price">$391,000</div>
+      <div class="stat-sub" id="s-price-sub">Dallas-Fort Worth, TX · All Types</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Price Change (Period)</div>
+      <div class="stat-value up" id="s-change">+7.1%</div>
+      <div class="stat-sub" id="s-change-sub">2022-Q1 to 2026-Q1</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Mortgage Rate</div>
+      <div class="stat-value" id="s-rate">6.6%</div>
+      <div class="stat-sub">Latest quarter</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Unemployment</div>
+      <div class="stat-value" id="s-unemp">4.1%</div>
+      <div class="stat-sub">BLS estimate</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Median Home Price + Forecast</span>
+        <span class="chart-badge" id="price-badge">All Types · All DFW</span>
+      </div>
+      <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Mortgage Rate vs. Unemployment</span>
+        <span class="chart-badge">Macro Factors</span>
+      </div>
+      <div class="chart-wrap"><canvas id="macroChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-row2">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Active Inventory</span>
+        <span class="chart-badge" id="inv-badge">All Types</span>
+      </div>
+      <div class="chart-wrap"><canvas id="invChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Price vs. Inventory Correlation</span>
+        <span class="chart-badge">Scatter</span>
+      </div>
+      <div class="chart-wrap"><canvas id="scatterChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Factor cards -->
+  <div class="factors-grid">
+    <div class="factor-card">
+      <div class="factor-name">Population Growth</div>
+      <div class="factor-val" style="color: var(--green)">+2.6% YoY</div>
+      <div class="factor-desc">DFW is one of the fastest-growing metros in the US, which sustains long-term demand.</div>
+    </div>
+    <div class="factor-card">
+      <div class="factor-name">Millennial Buyer Share</div>
+      <div class="factor-val" style="color: var(--accent)">33.8% of buyers</div>
+      <div class="factor-desc">Millennials are the largest homebuying cohort nationally. DFW is a top destination for this group.</div>
+    </div>
+    <div class="factor-card">
+      <div class="factor-name">Mortgage Rate</div>
+      <div class="factor-val" style="color: var(--red)">6.6% (30yr fixed)</div>
+      <div class="factor-desc">Scenario: Rates Hold. Higher rates reduce purchasing power and suppress prices.</div>
+    </div>
+    <div class="factor-card">
+      <div class="factor-name">Unemployment Rate</div>
+      <div class="factor-val" style="color: var(--yellow)">4.1%</div>
+      <div class="factor-desc">Low unemployment in DFW supports sustained buyer demand and price stability.</div>
+    </div>
+    <div class="factor-card">
+      <div class="factor-name">Geopolitical Stability</div>
+      <div class="factor-val" style="color: var(--green)">Neutral (0.0)</div>
+      <div class="factor-desc">Instability can trigger capital flight into hard assets like real estate, or freeze buyer activity.</div>
+    </div>
+    <div class="factor-card">
+      <div class="factor-name">Forecast — End of Period</div>
+      <div class="factor-val" style="color: var(--green)">$406,200</div>
+      <div class="factor-desc">2026-Q2 to 2027-Q1 — upward trend projected</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="main.js"></script>
+</body>
+</html>
