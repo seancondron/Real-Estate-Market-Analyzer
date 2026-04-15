@@ -1,13 +1,6 @@
 """
-Dallas Central Appraisal District - Residential Property Records
-Source: https://www.dallascad.org/AcctDetailRes.aspx  (bulk export)
-Download: Request the "Residential" export from dallascad.org → Data Downloads
-
-The CAD export has two key files:
-  - ACCOUNT_APPRL_YEAR.csv  (account info: address, owner, legal desc)
-  - RES_DETAIL.csv          (residential detail: sqft, beds, baths, year built, etc.)
-
-Join on account number.
+Dallas Central Appraisal District
+Source: https://www.dallascad.org/AcctDetailRes.aspx (bulk export)
 
 Usage:
     python3 -m backend.data.ingest.dallas_cad \
