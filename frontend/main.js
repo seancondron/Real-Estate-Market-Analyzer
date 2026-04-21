@@ -11,7 +11,10 @@ let BASE_PRICES     = [320000,325000,330000,328000,318000,322000,335000,330000,3
 let BASE_FORECAST   = [385000,370000,358000,362000,368000,375000,380000,378000,372000,376000,382000,388000,391000,396000,400000,403000,406200,409400,412600,415900,419300,422600,426000];
 let CI              = [8000,16000,25000,35000,44000,53000,63000,74000,84000,94000,104000,114000,124000,134000,144000,154000,164000,174000,184000,194000,204000,214000,224000];
 let MORTGAGE_RATE   = [3.7,3.9,3.9,3.9,3.7,3.6,3.5,3.5,4.2,3.9,3.8,3.9,4.4,4.6,4.6,4.6,4.4,4.1,3.6,3.7,3.5,3.2,2.9,2.7,2.7,3.0,2.9,3.1,3.9,5.1];
-let UNEMPLOYMENT    = [4.0,3.9,3.8,3.7,3.6,3.5,3.4,3.4,3.3,3.3,3.2,3.2,3.1,3.0,2.9,2.9,2.8,2.8,2.7,2.7,2.7,2.8,3.5,4.0,4.5,4.5,4.5,4.0,3.1,2.9];
+let PRICE_PER_SQFT  = [];
+let AVG_YEAR_BUILT  = [];
+let MEDIAN_SQFT     = [];
+let LISTING_VOLUME  = [];
 
 const MACRO_FEATURES = {
   mortgage_rate: { label: 'Mortgage Rate %', color: '#d29922', getData: () => MORTGAGE_RATE },
@@ -34,9 +37,24 @@ let API_SOURCE = { prices: 'baseline', rates: 'baseline', inventory: 'baseline' 
 async function loadMarketData() {
   const statusEl = document.getElementById('api-status');
   const type     = 'all';
+  const zip        = getZipValue();
+  const tier       = document.getElementById('f-tier').value;
+  const beds       = document.getElementById('f-beds').value;
+  const baths      = document.getElementById('f-baths').value;
+  const garage     = document.getElementById('f-garage').value;
+  const sqft       = document.getElementById('f-sqft').value;
+
+  const lot_sqft   = document.getElementById('f-lot').value;
 
   const params = new URLSearchParams();
-  if (type !== 'all') params.set('type', type);
+  if (type       !== 'all') params.set('type',       type);
+  if (zip        !== 'all') params.set('zip',        zip);
+  if (tier       !== 'all') params.set('tier',       tier);
+  if (beds       !== 'all') params.set('beds',       beds);
+  if (baths      !== 'all') params.set('baths',      baths);
+  if (garage     !== 'all') params.set('garage',     garage);
+  if (sqft       !== 'all') params.set('sqft',       sqft);
+  if (lot_sqft   !== 'all') params.set('lot_sqft',   lot_sqft);
   const url = `${API_BASE}/api/market-data${params.size ? '?' + params : ''}`;
 
   try {
@@ -50,14 +68,17 @@ async function loadMarketData() {
     BASE_FORECAST   = d.base_forecast;
     CI              = d.confidence_intervals;
     MORTGAGE_RATE   = d.mortgage_rate;
-    UNEMPLOYMENT    = d.unemployment;
+    PRICE_PER_SQFT  = d.price_per_sqft  || [];
+    AVG_YEAR_BUILT  = d.avg_year_built  || [];
+    MEDIAN_SQFT     = d.median_sqft     || [];
+    LISTING_VOLUME  = d.listing_volume  || [];
     API_SOURCE      = d.source;
 
     if (statusEl) {
       const live  = d.source.prices === 'mongodb';
       const freds = d.source.rates  === 'fred';
       statusEl.textContent = live
-        ? `API connected : ${freds ? 'FRED rates' : 'cached rates'}`
+        ? `API connected : live MongoDB data`
         : `API connected : ${freds ? 'FRED rates' : 'cached data'}`;
       statusEl.style.color = (live || freds) ? 'var(--green)' : 'var(--accent)';
     }
@@ -76,17 +97,17 @@ async function loadMarketData() {
 
 const PRICE_MULTIPLIERS = {
   type: { all:1.00, 'single-family':1.12, condo:0.72, townhouse:0.88, 'multi-family':1.35 },
-  beds: { all:1.00, '1':0.62, '2':0.81, '3':1.00, '4':1.28, '5+':1.65 },
-  baths:{ all:1.00, '1':0.70, '2':0.92, '3':1.15, '4+':1.40 },
-  tier: { all:1.00, entry:0.68, mid:0.95, upper:1.45, luxury:2.40 },
-  neighborhood: {
-    all:1.00, downtown:1.10, uptown:1.22, lakewood:1.18,
-    'preston-hollow':1.85, 'bishop-arts':1.05, frisco:1.08, plano:1.02, mckinney:0.96,
-  },
 };
 
 
 function getMultiplier(map, val) { return map[val] ?? 1.00; }
+
+// Extract a bare 5-digit ZIP from the combo input (handles "75201 – Dallas", "75201", or "All DFW")
+function getZipValue() {
+  const raw = (document.getElementById('f-neighborhood').value || '').trim();
+  const m   = raw.match(/\b(\d{5})\b/);
+  return m ? m[1] : 'all';
+}
 
 
 // ---------------------------------------------------------------------------
@@ -130,20 +151,16 @@ function buildSegmentDesc() {
   const beds   = document.getElementById('f-beds').value;
   const baths  = document.getElementById('f-baths').value;
   const tier   = document.getElementById('f-tier').value;
-  const hood   = document.getElementById('f-neighborhood').value;
+  const zip    = getZipValue();
 
-  const labels = {
-    type:  { 'single-family':'Single Family', condo:'Condo', townhouse:'Townhouse', 'multi-family':'Multi-Family' },
-    tier:  { entry:'Entry (<$300K)', mid:'Mid ($300K–$500K)', upper:'Upper ($500K–$800K)', luxury:'Luxury (>$800K)' },
-    hood:  { downtown:'Downtown Dallas', uptown:'Uptown', lakewood:'Lakewood', 'preston-hollow':'Preston Hollow', 'bishop-arts':'Bishop Arts', frisco:'Frisco', plano:'Plano', mckinney:'McKinney' },
-  };
+  const tierLabels = { entry:'Entry (<$300K)', mid:'Mid ($300K–$500K)', upper:'Upper ($500K–$800K)', luxury:'Luxury (>$800K)' };
 
   const parts = [];
-  if (type  !== 'all') parts.push(labels.type[type]);
+  if (type  !== 'all') parts.push({ 'single-family':'Single Family', condo:'Condo', townhouse:'Townhouse', 'multi-family':'Multi-Family' }[type]);
   if (beds  !== 'all') parts.push(beds + ' bed');
   if (baths !== 'all') parts.push(baths + ' bath');
-  if (tier  !== 'all') parts.push(labels.tier[tier]);
-  if (hood  !== 'all') parts.push(labels.hood[hood]);
+  if (tier  !== 'all') parts.push(tierLabels[tier]);
+  if (zip   !== 'all') parts.push('ZIP ' + zip);
 
   return parts.length ? parts.join(' · ') : null;
 }
@@ -153,12 +170,9 @@ function buildSegmentDesc() {
 // Main analysis : reads all controls, scales data, redraws everything
 // ---------------------------------------------------------------------------
 
-function runAnalysis() {
-  const type  = 'all';
-  const beds  = document.getElementById('f-beds').value;
-  const baths = document.getElementById('f-baths').value;
-  const tier  = document.getElementById('f-tier').value;
-  const hood  = document.getElementById('f-neighborhood').value;
+async function runAnalysis() {
+  const type         = 'all';
+  const rateScenario = document.getElementById('sel-rate').value;
 
   // --- History window ---
   const startQ   = document.getElementById('sel-start').value;
@@ -173,19 +187,25 @@ function runAnalysis() {
 
   // --- Rate scenario: adjusts forecast prices per quarter ---
   // Falling rates → buyers can afford more → prices rise; rising rates → inverse
-  const rateScenario = document.getElementById('sel-rate').value;
   const rateGrowthPerQ = { current: 0.000, falling: 0.012, rising: -0.009 }[rateScenario] ?? 0;
 
   // --- Price multipliers ---
   // Skip the type multiplier when the API already returned type-filtered MongoDB data,
   // so we don't double-apply it on top of real segment prices.
   const typeAlreadyFiltered = API_SOURCE.prices === 'mongodb' && type !== 'all';
-  const priceMult =
-    (typeAlreadyFiltered ? 1.00 : getMultiplier(PRICE_MULTIPLIERS.type, type)) *
-    getMultiplier(PRICE_MULTIPLIERS.beds,         beds)  *
-    getMultiplier(PRICE_MULTIPLIERS.baths,        baths) *
-    getMultiplier(PRICE_MULTIPLIERS.tier,         tier)  *
-    getMultiplier(PRICE_MULTIPLIERS.neighborhood, hood);
+  // When a specific ZIP is selected the API already returns ZIP-filtered prices,
+  // so no additional location multiplier is needed.
+  const priceMult = typeAlreadyFiltered ? 1.00 : getMultiplier(PRICE_MULTIPLIERS.type, type);
+
+  // --- Guard: no data for this filter combination ---
+  if (LABELS_HIST.length === 0) {
+    ['s-price','s-change','s-rate','s-forecast-end','s-ppsf','s-dom','s-sqft','s-volume']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.textContent = 'N/A'; });
+    document.getElementById('s-price-sub').textContent = 'No data for selected filters';
+    destroyChart('price');
+    destroyChart('macro');
+    return;
+  }
 
   // --- Slice to history window ---
   const histLabels = LABELS_HIST.slice(startIdx, endIdx + 1);
@@ -194,7 +214,7 @@ function runAnalysis() {
   const histRates  = MORTGAGE_RATE.slice(startIdx, endIdx + 1).map(r => r ?? null);
   const prices     = BASE_PRICES.slice(startIdx, endIdx + 1).map(p => Math.round(p * priceMult));
 
-  // --- Forecast: always anchors to the last visible history quarter ---
+  // --- Forecast: ML model via backend ---
 
   // Build quarter labels dynamically from endIdx forward
   const forecastLabels = [];
@@ -205,22 +225,40 @@ function runAnalysis() {
     forecastLabels.push(`${fy}-Q${fq}`);
   }
 
-  // Derive quarterly growth rate from the last 4 visible history points
-  const tail = prices.slice(-4);
-  let baseGrowth = tail.length >= 2
-    ? (tail[tail.length - 1] / tail[0]) ** (1 / (tail.length - 1)) - 1
-    : 0.008;
-  baseGrowth = Math.max(-0.05, Math.min(0.05, baseGrowth)); // clamp runaway extrapolation
-
   const lastPrice = prices[prices.length - 1];
-  const forecastPrices = forecastLabels.map((_, i) =>
-    Math.round(lastPrice * Math.pow(1 + baseGrowth + rateGrowthPerQ, i + 1))
-  );
 
-  // CI widens ~2.2% of last price per quarter
-  const ciScaled = forecastLabels.map((_, i) =>
-    Math.round(lastPrice * 0.022 * (i + 1))
-  );
+  // Call the ML forecast endpoint; fall back to simple extrapolation if unavailable
+  let forecastPrices, ciLower, ciUpper;
+  try {
+    const fcRes = await fetch(`${API_BASE}/api/forecast`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prices:        prices,
+        rates:         histRates,
+        n_quarters:    nForecast,
+        rate_scenario: rateScenario,
+      }),
+    });
+    if (!fcRes.ok) throw new Error(`HTTP ${fcRes.status}`);
+    const fcData = await fcRes.json();
+    forecastPrices = fcData.forecast;
+    ciLower        = fcData.ci_lower;
+    ciUpper        = fcData.ci_upper;
+  } catch {
+    // Offline fallback: simple geometric extrapolation
+    const tail = prices.slice(-8);
+    let g = tail.length >= 2
+      ? (tail[tail.length - 1] / tail[0]) ** (1 / (tail.length - 1)) - 1
+      : 0.008;
+    g = Math.max(-0.05, Math.min(0.05, g)) + rateGrowthPerQ;
+    forecastPrices = forecastLabels.map((_, i) => Math.round(lastPrice * Math.pow(1 + g, i + 1)));
+    ciLower        = forecastPrices.map((f, i) => Math.round(f - lastPrice * 0.022 * (i + 1)));
+    ciUpper        = forecastPrices.map((f, i) => Math.round(f + lastPrice * 0.022 * (i + 1)));
+  }
+
+  // ciScaled kept for drawPriceChart signature compatibility
+  const ciScaled = forecastPrices.map((f, i) => ciUpper[i] - f);
 
   // --- Segment bar ---
   const segDesc = buildSegmentDesc();
@@ -252,22 +290,25 @@ function runAnalysis() {
 
   document.getElementById('s-rate').textContent = currentRate != null ? currentRate.toFixed(1) + '%' : 'N/A';
 
-  // --- Factor cards ---
-  const rateDescMap = {
-    current: 'Scenario: Rates Hold. Elevated rates limit purchasing power.',
-    falling: 'Scenario: Rates Fall (−0.5/qtr). Improving affordability boosts demand and prices.',
-    rising:  'Scenario: Rates Rise (+0.4/qtr). Higher rates compress purchasing power and slow price growth.',
-  };
-  const forecastEnd    = forecastPrices[forecastPrices.length - 1];
-  const forecastTrend  = forecastEnd > currentPrice ? 'upward trend projected' : 'flat/declining trend projected';
-  const forecastPeriod = `${forecastLabels[0]} to ${forecastLabels[forecastLabels.length - 1]}`;
+  const lastPpsf  = PRICE_PER_SQFT.slice(startIdx, endIdx + 1).filter(v => v != null).at(-1);
+  const lastYear  = AVG_YEAR_BUILT.slice(startIdx, endIdx + 1).filter(v => v != null).at(-1);
+  const lastSqft  = MEDIAN_SQFT.slice(startIdx, endIdx + 1).filter(v => v != null).at(-1);
+  const totalVol  = LISTING_VOLUME.slice(startIdx, endIdx + 1).reduce((s, v) => s + (v || 0), 0);
 
-  document.getElementById('fc-rate-val').textContent      = currentRate != null ? currentRate.toFixed(1) + '% (30yr fixed)' : 'N/A';
-  document.getElementById('fc-rate-desc').textContent     = rateDescMap[rateScenario];
-  document.getElementById('fc-forecast-val').textContent  = fmtPrice(forecastEnd);
-  document.getElementById('fc-forecast-desc').textContent = `${forecastPeriod} : ${forecastTrend}`;
+  document.getElementById('s-ppsf').textContent   = lastPpsf != null ? '$' + lastPpsf.toLocaleString()       : 'N/A';
+  document.getElementById('s-dom').textContent    = lastYear != null ? lastYear.toString()                    : 'N/A';
+  document.getElementById('s-sqft').textContent   = lastSqft != null ? lastSqft.toLocaleString() + ' sqft'   : 'N/A';
+  document.getElementById('s-volume').textContent = totalVol > 0     ? totalVol.toLocaleString()              : 'N/A';
 
-  drawPriceChart(prices, forecastPrices, ciScaled, histLabels, forecastLabels);
+  const forecastEnd = forecastPrices[forecastPrices.length - 1];
+
+
+  const forecastEndEl = document.getElementById('s-forecast-end');
+  forecastEndEl.textContent = fmtPrice(forecastEnd);
+  forecastEndEl.className   = forecastEnd >= currentPrice ? 'stat-value up' : 'stat-value down';
+  document.getElementById('s-forecast-end-sub').textContent = forecastLabels[forecastLabels.length - 1];
+
+  drawPriceChart(prices, forecastPrices, ciLower, ciUpper, histLabels, forecastLabels);
   drawMacroChart();
 }
 
@@ -276,12 +317,13 @@ function runAnalysis() {
 // Charts
 // ---------------------------------------------------------------------------
 
-function drawPriceChart(prices, forecasts, ci, histLabels, forecastLabels) {
+function drawPriceChart(prices, forecasts, ciLower, ciUpper, histLabels, forecastLabels) {
   destroyChart('price');
   const allLabels    = [...histLabels, ...forecastLabels];
-  const forecastLine = [...Array(prices.length - 1).fill(null), prices[prices.length - 1], ...forecasts];
-  const upperBand    = [...Array(prices.length - 1).fill(null), prices[prices.length - 1], ...forecasts.map((f, i) => f + ci[i])];
-  const lowerBand    = [...Array(prices.length - 1).fill(null), prices[prices.length - 1], ...forecasts.map((f, i) => f - ci[i])];
+  const anchor       = prices[prices.length - 1];
+  const forecastLine = [...Array(prices.length - 1).fill(null), anchor, ...forecasts];
+  const upperBand    = [...Array(prices.length - 1).fill(null), anchor, ...ciUpper];
+  const lowerBand    = [...Array(prices.length - 1).fill(null), anchor, ...ciLower];
 
   charts['price'] = new Chart(document.getElementById('priceChart'), {
     type: 'line',
@@ -421,12 +463,66 @@ async function runPredict() {
 // Event wiring
 // ---------------------------------------------------------------------------
 
+// Populate ZIP code datalist from live API
+async function loadZipcodes() {
+  try {
+    const res  = await fetch(`${API_BASE}/api/zipcodes`);
+    if (!res.ok) return;
+    const zips = await res.json();
+    const dl   = document.getElementById('zip-datalist');
+    // "All DFW" is already in the HTML; append only the ZIP entries
+    zips.forEach(({ zip, city }) => {
+      const opt = document.createElement('option');
+      opt.value = `${zip} – ${city}`;
+      dl.appendChild(opt);
+    });
+  } catch { /* offline — input still works, just no suggestions */ }
+}
+
 // Run Analysis button: full refetch (gets latest real data) + redraw
 document.getElementById('run-btn').addEventListener('click', () => {
   loadMarketData().then(() => runAnalysis());
 });
 
+// Select all text on focus so the user can immediately type to filter
+document.getElementById('f-neighborhood').addEventListener('focus', function () {
+  this.select();
+});
+// Restore default label if left blank
+document.getElementById('f-neighborhood').addEventListener('blur', function () {
+  if (this.value.trim() === '') this.value = 'All DFW';
+});
+
+// ZIP change: reload market data for that ZIP then rerun.
+// Fires on datalist selection (change) or when user clears / types a full 5-digit ZIP (input).
+let _zipDebounce;
+document.getElementById('f-neighborhood').addEventListener('input', () => {
+  clearTimeout(_zipDebounce);
+  const zip = getZipValue();
+  const raw = document.getElementById('f-neighborhood').value.trim();
+  // Refetch when value is a valid ZIP, blank, or "All DFW"
+  if (zip !== 'all' || raw === '' || raw.toLowerCase() === 'all dfw') {
+    _zipDebounce = setTimeout(() => loadMarketData().then(() => runAnalysis()), 400);
+  }
+});
+document.getElementById('f-neighborhood').addEventListener('change', () => {
+  loadMarketData().then(() => runAnalysis());
+});
+
+// All segment filters hit MongoDB — reload data on change
+['f-beds','f-baths','f-tier','f-garage','f-sqft','f-lot'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => {
+    loadMarketData().then(() => runAnalysis());
+  });
+});
+
+// Chart controls only need a redraw, not a data reload
+['sel-start','sel-end','sel-periods','sel-rate'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('change', () => runAnalysis());
+});
+
 // ---------------------------------------------------------------------------
 // Initial load
 // ---------------------------------------------------------------------------
-loadMarketData().then(() => runAnalysis());
+loadZipcodes().then(() => loadMarketData()).then(() => runAnalysis());

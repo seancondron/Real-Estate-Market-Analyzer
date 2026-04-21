@@ -32,7 +32,29 @@ def _quarter_sort_key(label):
     return int(yr) * 4 + int(qtr)
 
 
-def _try_get_real_data(property_type=None):
+_TIER_RANGES = {
+    'entry':   (0,       300_000),
+    'mid':     (300_000, 500_000),
+    'upper':   (500_000, 800_000),
+    'luxury':  (800_000, 10_000_000),
+}
+
+
+def _parse_range(val):
+    """Parse '1000-2000', '4000+', or '-1960' into (lo, hi) ints (None = unbounded)."""
+    if not val or val == 'all':
+        return None, None
+    if val.endswith('+'):
+        return int(val[:-1]), None
+    if val.startswith('-'):
+        return None, int(val[1:])
+    lo, hi = val.split('-')
+    return int(lo), int(hi)
+
+
+def _try_get_real_data(property_type=None, zip_code=None, tier=None,
+                       garage=None, sqft=None, year_built=None, lot_sqft=None,
+                       beds=None, baths=None):
     result = {}
     try:
         from backend.db.mongodb import db
@@ -50,12 +72,45 @@ def _try_get_real_data(property_type=None):
             result['mortgage_rates'] = {k: round(sum(v) / len(v), 3) for k, v in by_q.items()}
 
         # Properties — quarterly avg price, all available years
+        price_min, price_max = 10_000, 10_000_000
+        if tier and tier in _TIER_RANGES:
+            price_min, price_max = _TIER_RANGES[tier]
+
         match = {
-            'price': {'$gt': 10_000, '$lt': 10_000_000},
+            'price': {'$gt': price_min, '$lte': price_max},
             'city':  {'$in': [c.title() for c in DFW_CITIES]},
         }
         if property_type and property_type != 'all':
             match['property_type'] = {'$regex': _TYPE_MAP.get(property_type, property_type), '$options': 'i'}
+        if zip_code and zip_code != 'all':
+            match['zip_code'] = str(zip_code)
+        if beds and beds != 'all':
+            if beds == '5+':
+                match['beds'] = {'$gte': 5}
+            else:
+                match['beds'] = int(beds)
+        if baths and baths != 'all':
+            if baths == '4+':
+                match['baths'] = {'$gte': 4}
+            else:
+                match['baths'] = float(baths)
+        if garage and garage != 'all':
+            match['garage'] = (garage == 'yes')
+        sqft_lo, sqft_hi = _parse_range(sqft)
+        if sqft_lo is not None or sqft_hi is not None:
+            match['sqft'] = {}
+            if sqft_lo is not None: match['sqft']['$gte'] = sqft_lo
+            if sqft_hi is not None: match['sqft']['$lt']  = sqft_hi
+        yr_lo, yr_hi = _parse_range(year_built)
+        if yr_lo is not None or yr_hi is not None:
+            match['year_built'] = {}
+            if yr_lo is not None: match['year_built']['$gte'] = yr_lo
+            if yr_hi is not None: match['year_built']['$lt']  = yr_hi
+        lot_lo, lot_hi = _parse_range(lot_sqft)
+        if lot_lo is not None or lot_hi is not None:
+            match['lot_sqft'] = {}
+            if lot_lo is not None: match['lot_sqft']['$gte'] = lot_lo
+            if lot_hi is not None: match['lot_sqft']['$lt']  = lot_hi
 
         pipeline = [
             {'$match': match},
@@ -67,9 +122,13 @@ def _try_get_real_data(property_type=None):
             }},
             {'$match': {'_yr': {'$gte': 2010, '$lte': 2026}}},
             {'$group': {
-                '_id':       {'year': '$_yr', 'quarter': '$_qtr'},
-                'avg_price': {'$avg': '$price'},
-                'count':     {'$sum': 1},
+                '_id':            {'year': '$_yr', 'quarter': '$_qtr'},
+                'avg_price':      {'$avg': '$price'},
+                'avg_sqft':       {'$avg': '$sqft'},
+                'avg_year':       {'$avg': '$year_built'},
+                'count':          {'$sum': 1},
+                'price_sqft_sum': {'$sum': {'$cond': [{'$and': [{'$gt': ['$sqft', 0]}, {'$ne': ['$sqft', None]}]}, {'$divide': ['$price', '$sqft']}, 0]}},
+                'price_sqft_cnt': {'$sum': {'$cond': [{'$and': [{'$gt': ['$sqft', 0]}, {'$ne': ['$sqft', None]}]}, 1, 0]}},
             }},
             {'$sort': {'_id.year': 1, '_id.quarter': 1}},
         ]
@@ -77,6 +136,24 @@ def _try_get_real_data(property_type=None):
         if price_docs:
             result['prices'] = {
                 _qlabel(d['_id']['year'], d['_id']['quarter']): round(d['avg_price'])
+                for d in price_docs
+            }
+            result['ppsf'] = {
+                _qlabel(d['_id']['year'], d['_id']['quarter']): (
+                    round(d['price_sqft_sum'] / d['price_sqft_cnt'], 1) if d.get('price_sqft_cnt', 0) > 0 else None
+                )
+                for d in price_docs
+            }
+            result['sqft'] = {
+                _qlabel(d['_id']['year'], d['_id']['quarter']): round(d['avg_sqft']) if d.get('avg_sqft') else None
+                for d in price_docs
+            }
+            result['year_built'] = {
+                _qlabel(d['_id']['year'], d['_id']['quarter']): round(d['avg_year']) if d.get('avg_year') else None
+                for d in price_docs
+            }
+            result['volume'] = {
+                _qlabel(d['_id']['year'], d['_id']['quarter']): d['count']
                 for d in price_docs
             }
 
@@ -95,7 +172,11 @@ def _build_response(real, property_type=None):
                 'mortgage_rate': [], 'unemployment': []}
 
     hist_labels = sorted(real['prices'].keys(), key=_quarter_sort_key)
-    prices = [real['prices'][lbl] for lbl in hist_labels]
+    prices  = [real['prices'][lbl] for lbl in hist_labels]
+    ppsf        = [real.get('ppsf',       {}).get(lbl) for lbl in hist_labels]
+    sqft        = [real.get('sqft',       {}).get(lbl) for lbl in hist_labels]
+    year_built  = [real.get('year_built', {}).get(lbl) for lbl in hist_labels]
+    volume      = [real.get('volume',     {}).get(lbl) for lbl in hist_labels]
 
     # Forecast: extrapolate from trend of last 4 real quarters
     recent = prices[-4:]
@@ -122,7 +203,10 @@ def _build_response(real, property_type=None):
         'base_forecast':        forecast,
         'confidence_intervals': ci,
         'mortgage_rate':        rates,
-        'unemployment':         [None] * len(hist_labels),
+        'price_per_sqft':       ppsf,
+        'avg_year_built':       year_built,
+        'median_sqft':          sqft,
+        'listing_volume':       volume,
     }
 
 
@@ -138,8 +222,41 @@ def health():
 @app.get('/api/market-data')
 def market_data():
     property_type = request.args.get('type')
-    real = _try_get_real_data(property_type=property_type)
+    zip_code      = request.args.get('zip')
+    tier          = request.args.get('tier')
+    garage        = request.args.get('garage')
+    sqft          = request.args.get('sqft')
+    year_built    = request.args.get('year_built')
+    lot_sqft      = request.args.get('lot_sqft')
+    beds          = request.args.get('beds')
+    baths         = request.args.get('baths')
+    real = _try_get_real_data(
+        property_type=property_type, zip_code=zip_code, tier=tier,
+        garage=garage, sqft=sqft, year_built=year_built, lot_sqft=lot_sqft,
+        beds=beds, baths=baths,
+    )
     return jsonify(_build_response(real, property_type=property_type))
+
+
+@app.get('/api/zipcodes')
+def zipcodes():
+    try:
+        from backend.db.mongodb import db
+        from backend.db.schema import DFW_CITIES
+        pipeline = [
+            {'$match': {
+                'price':    {'$gt': 10_000, '$lt': 10_000_000},
+                'city':     {'$in': [c.title() for c in DFW_CITIES]},
+                'zip_code': {'$ne': None},
+            }},
+            {'$group': {'_id': '$zip_code', 'count': {'$sum': 1}, 'city': {'$first': '$city'}}},
+            {'$match': {'count': {'$gte': 5}}},
+            {'$sort': {'_id': 1}},
+        ]
+        results = list(db['properties'].aggregate(pipeline))
+        return jsonify([{'zip': r['_id'], 'city': r['city'], 'count': r['count']} for r in results])
+    except Exception as exc:
+        return jsonify({'error': str(exc)}), 500
 
 
 @app.post('/api/predict')
@@ -162,6 +279,25 @@ def predict():
             'zip_code':      str(body['zip_code']),
         })
         return jsonify({'predicted_price': round(price, 2)})
+    except Exception as exc:
+        return jsonify({'error': str(exc)}), 500
+
+
+@app.post('/api/forecast')
+def forecast():
+    body         = request.get_json(silent=True) or {}
+    prices       = body.get('prices', [])
+    rates        = body.get('rates', [])
+    n_quarters   = int(body.get('n_quarters', 8))
+    rate_scenario = str(body.get('rate_scenario', 'current'))
+
+    if len(prices) < 6:
+        return jsonify({'error': 'Need at least 6 historical price points'}), 400
+
+    try:
+        from backend.services.forecast import ml_forecast
+        fc, lo, hi = ml_forecast(prices, rates, n_quarters, rate_scenario)
+        return jsonify({'forecast': fc, 'ci_lower': lo, 'ci_upper': hi})
     except Exception as exc:
         return jsonify({'error': str(exc)}), 500
 

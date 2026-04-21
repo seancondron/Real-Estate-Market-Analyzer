@@ -12,6 +12,7 @@
 
 <header>
   <h1>Dallas-Fort Worth Real Estate Market Analyzer</h1>
+  <span class="chart-badge" id="api-status">connecting…</span>
 </header>
 
 <div class="container">
@@ -95,19 +96,50 @@
     </div>
 
     <div class="control-group">
-      <label>Neighborhood</label>
-      <select id="f-neighborhood">
-        <option value="all">All DFW</option>
-        <option value="downtown">Downtown Dallas</option>
-        <option value="uptown">Uptown</option>
-        <option value="lakewood">Lakewood</option>
-        <option value="preston-hollow">Preston Hollow</option>
-        <option value="bishop-arts">Bishop Arts</option>
-        <option value="frisco">Frisco</option>
-        <option value="plano">Plano</option>
-        <option value="mckinney">McKinney</option>
+      <label>ZIP Code</label>
+      <input id="f-neighborhood" list="zip-datalist" value="All DFW">
+      <datalist id="zip-datalist">
+        <option value="All DFW"></option>
+      </datalist>
+    </div>
+
+    <div class="control-group">
+      <label>Garage</label>
+      <select id="f-garage">
+        <option value="all">All</option>
+        <option value="yes">With Garage</option>
+        <option value="no">No Garage</option>
       </select>
     </div>
+
+    <div class="control-row">
+      <div class="control-group">
+        <label>Sq Ft</label>
+        <select id="f-sqft">
+          <option value="all">All</option>
+          <option value="0-1000">Under 1,000</option>
+          <option value="1000-1500">1,000 – 1,500</option>
+          <option value="1500-2000">1,500 – 2,000</option>
+          <option value="2000-2500">2,000 – 2,500</option>
+          <option value="2500-3000">2,500 – 3,000</option>
+          <option value="3000-4000">3,000 – 4,000</option>
+          <option value="4000+">4,000+</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label>Lot Sq Ft</label>
+        <select id="f-lot">
+          <option value="all">All</option>
+          <option value="0-3000">Under 3,000</option>
+          <option value="3000-5000">3,000 – 5,000</option>
+          <option value="5000-7500">5,000 – 7,500</option>
+          <option value="7500-10000">7,500 – 10,000</option>
+          <option value="10000-20000">10,000 – 20,000</option>
+          <option value="20000+">20,000+</option>
+        </select>
+      </div>
+    </div>
+
 
     <div class="controls-divider"></div>
 
@@ -130,30 +162,6 @@
     Filtered view: <span id="segment-desc"></span>
   </div>
 
-  <!-- KPI stat cards -->
-  <div class="stats-row">
-    <div class="stat-card">
-      <div class="stat-label">Median Price</div>
-      <div class="stat-value" id="s-price">$391,000</div>
-      <div class="stat-sub" id="s-price-sub">Dallas-Fort Worth, TX · All Types</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Price Change (Period)</div>
-      <div class="stat-value up" id="s-change">+7.1%</div>
-      <div class="stat-sub" id="s-change-sub">2022-Q1 to 2026-Q1</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Mortgage Rate</div>
-      <div class="stat-value" id="s-rate">6.6%</div>
-      <div class="stat-sub">Latest quarter</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Unemployment</div>
-      <div class="stat-value" id="s-unemp">4.1%</div>
-      <div class="stat-sub">BLS estimate</div>
-    </div>
-  </div>
-
   <!-- Charts -->
   <div class="charts-grid">
     <div class="chart-card">
@@ -174,72 +182,50 @@
     </div>
   </div>
 
-  <!-- Price Predictor -->
-  <div class="predictor-section">
-    <div class="predictor-header">
-      <span class="chart-title">ML Price Predictor</span>
-      <span class="chart-badge" id="api-status">connecting…</span>
+  <!-- KPI stat cards -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Median Price</div>
+      <div class="stat-value" id="s-price">—</div>
+      <div class="stat-sub" id="s-price-sub">Dallas-Fort Worth, TX · All Types</div>
     </div>
-    <div class="predictor-body">
-      <div class="predictor-form">
-        <div class="pred-field">
-          <label>Property Type</label>
-          <select id="p-type">
-            <option value="single family">Single Family</option>
-          </select>
-        </div>
-        <div class="pred-field">
-          <label>Bedrooms</label>
-          <input type="number" id="p-beds" value="3" min="1" max="10">
-        </div>
-        <div class="pred-field">
-          <label>Bathrooms</label>
-          <input type="number" id="p-baths" value="2" min="1" max="10" step="0.5">
-        </div>
-        <div class="pred-field">
-          <label>Sq Ft</label>
-          <input type="number" id="p-sqft" value="2000" min="200" max="20000">
-        </div>
-        <div class="pred-field">
-          <label>Year Built</label>
-          <input type="number" id="p-year" value="2000" min="1900" max="2025">
-        </div>
-        <div class="pred-field">
-          <label>Lot Sq Ft</label>
-          <input type="number" id="p-lot" value="6000" min="0">
-        </div>
-        <div class="pred-field">
-          <label>ZIP Code</label>
-          <input type="text" id="p-zip" value="75201" maxlength="5">
-        </div>
-        <div class="pred-field pred-field--check">
-          <label><input type="checkbox" id="p-garage" checked> Garage</label>
-        </div>
-      </div>
-      <div class="predictor-result">
-        <button class="btn" id="predict-btn" onclick="runPredict()">Predict Price</button>
-        <div class="pred-output" id="pred-output">
-          <div class="pred-label">Estimated Value</div>
-          <div class="pred-price" id="pred-price">:</div>
-          <div class="pred-note" id="pred-note">Enter property details and click Predict</div>
-        </div>
-      </div>
+    <div class="stat-card">
+      <div class="stat-label">Price Change (Period)</div>
+      <div class="stat-value up" id="s-change">—</div>
+      <div class="stat-sub" id="s-change-sub">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Forecast End Price</div>
+      <div class="stat-value" id="s-forecast-end">—</div>
+      <div class="stat-sub" id="s-forecast-end-sub">end of forecast period</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Mortgage Rate</div>
+      <div class="stat-value" id="s-rate">—</div>
+      <div class="stat-sub">Latest quarter</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Price per Sq Ft</div>
+      <div class="stat-value" id="s-ppsf">—</div>
+      <div class="stat-sub">Median $/sqft</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Year Built</div>
+      <div class="stat-value" id="s-dom">—</div>
+      <div class="stat-sub">Avg build year</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Median Sq Ft</div>
+      <div class="stat-value" id="s-sqft">—</div>
+      <div class="stat-sub">Avg home size</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Listing Volume</div>
+      <div class="stat-value" id="s-volume">—</div>
+      <div class="stat-sub">Listings in period</div>
     </div>
   </div>
 
-  <!-- Factor cards -->
-  <div class="factors-grid">
-<div class="factor-card">
-      <div class="factor-name">Mortgage Rate</div>
-      <div class="factor-val" id="fc-rate-val" style="color: var(--red)">6.6% (30yr fixed)</div>
-      <div class="factor-desc" id="fc-rate-desc">Scenario: Rates Hold. Higher rates reduce purchasing power and suppress prices.</div>
-    </div>
-    <div class="factor-card">
-      <div class="factor-name">Forecast : End of Period</div>
-      <div class="factor-val" id="fc-forecast-val" style="color: var(--green)">$406,200</div>
-      <div class="factor-desc" id="fc-forecast-desc">2026-Q2 to 2027-Q1 : upward trend projected</div>
-    </div>
-  </div>
 
 </div>
 
