@@ -1,4 +1,5 @@
 import joblib
+import numpy as np
 import os
 import pandas as pd
 from datetime import date
@@ -52,4 +53,4 @@ def run_prediction(input_data: dict, target_date: date | None = None) -> float:
             df[col] = 0
     df = df[feature_cols]
 
-    return float(model.predict(df)[0])
+    return float(np.expm1(model.predict(df)[0]))

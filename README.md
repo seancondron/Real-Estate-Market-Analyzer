@@ -1,60 +1,85 @@
 # Real Estate Market Analyzer
 
-A DFW home price prediction model built with Python, scikit-learn, and MongoDB.
+A DFW home price analysis and prediction tool built with Python, Flask, scikit-learn, MongoDB, and a vanilla JS frontend.
 
 ## Stack
-- **Frontend**: TBD
-- **Backend**: Pandas, Numpy, Scikit-learn
+- **Frontend**: HTML/CSS/JavaScript (Chart.js)
+- **Backend**: Flask, Pandas, Scikit-learn
 - **Database**: MongoDB Atlas
-- **ML Model**: TBD
+- **ML Model**: Random Forest / Gradient Boosting (scikit-learn)
 
-## Setup
+---
 
-1. Clone the repo
-   ```bash
-   git clone https://github.com/your-username/real-estate-market-analyzer.git
-   cd real-estate-market-analyzer
-   ```
+## Getting Started
 
-2. Create a virtual environment
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   ```
+### Prerequisites
+- Python 3.9+
+- Access to the MongoDB Atlas cluster (ask a team member for the connection string)
 
-3. Install dependencies
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 1. Clone the repo
+```bash
+git clone https://github.com/your-username/real-estate-market-analyzer.git
+cd real-estate-market-analyzer
+```
 
-4. Set up environment variables
-   ```bash
-   cp .env.example .env
-   
-   # Add your MongoDB URI to .env:
-   # MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?appName=<AppName>
-   # MONGODB_DB=real_estate
-   # (ask a project team member for this)
-   ```
+### 2. Create a virtual environment
+```bash
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+```
 
-5. Train the model
-   ```bash
-   python3 -m backend.models.train
-   ```
-   > Training data is already in MongoDB Atlas, so no data download is required.
-   > This generates `backend/models/saved/model.pkl` and `features.pkl` locally.
+### 3. Install dependencies
+```bash
+pip install -r requirements.txt
+```
 
-   To train with a specific model:
-   ```bash
-   python3 -m backend.models.train --model random_forest
-   python3 -m backend.models.train --model gradient_boosting
-   ```
+### 4. Configure environment variables
+```bash
+cp .env.example .env
+```
 
-## Testing the Model
+Open `.env` and fill in:
+```
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?appName=<AppName>
+MONGODB_DB=real_estate
+```
 
-After training, run this to test a price prediction:
+### 5. Train the model
+```bash
+python3 -m backend.models.train
+```
 
-```python
+This pulls training data from MongoDB and writes two files locally:
+- `backend/models/saved/model.pkl`
+- `backend/models/saved/features.pkl`
+
+To train with a specific algorithm:
+```bash
+python3 -m backend.models.train --model random_forest
+python3 -m backend.models.train --model gradient_boosting
+```
+
+### 6. Start the Flask API
+```bash
+python3 -m backend.api.app
+```
+
+The API runs on `http://localhost:5001`.
+
+### 7. Open the frontend
+
+Open `frontend/index.html` directly in a browser, or serve it with any static file server:
+```bash
+npx serve frontend
+```
+
+The dashboard connects to the Flask API automatically. If the API is offline it falls back to cached data so the charts still render.
+
+---
+
+## Testing the ML model
+
+```bash
 python3 -c "
 from backend.services.predict import run_prediction
 from datetime import date
@@ -76,6 +101,12 @@ print(f'Predicted price: \${result:,.0f}')
 "
 ```
 
-Expected output: 
-`Predicted price: $XXX,XXX`
+---
 
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/market-data` | Historical prices, mortgage rates, forecast data |
+| POST | `/api/predict` | ML price prediction for a specific property |
+| GET | `/api/health` | Health check |

@@ -22,22 +22,28 @@
     <div class="control-group">
       <label>History Start</label>
       <select id="sel-start">
-        <option>2022-Q1</option><option>2022-Q2</option><option>2022-Q3</option><option>2022-Q4</option>
-        <option>2023-Q1</option><option>2023-Q2</option><option>2023-Q3</option><option>2023-Q4</option>
-        <option>2024-Q1</option><option>2024-Q2</option><option>2024-Q3</option><option>2024-Q4</option>
-        <option>2025-Q1</option><option>2025-Q2</option><option>2025-Q3</option><option>2025-Q4</option>
-        <option>2026-Q1</option>
+        <option>2015-Q1</option><option>2015-Q2</option><option>2015-Q3</option><option>2015-Q4</option>
+        <option>2016-Q1</option><option>2016-Q2</option><option>2016-Q3</option><option>2016-Q4</option>
+        <option>2017-Q1</option><option>2017-Q2</option><option>2017-Q3</option><option>2017-Q4</option>
+        <option>2018-Q1</option><option>2018-Q2</option><option>2018-Q3</option><option>2018-Q4</option>
+        <option>2019-Q1</option><option>2019-Q2</option><option>2019-Q3</option><option>2019-Q4</option>
+        <option>2020-Q1</option><option>2020-Q2</option><option>2020-Q3</option><option>2020-Q4</option>
+        <option>2021-Q1</option><option>2021-Q2</option><option>2021-Q3</option><option>2021-Q4</option>
+        <option selected>2022-Q1</option><option>2022-Q2</option>
       </select>
     </div>
 
     <div class="control-group">
       <label>History End</label>
       <select id="sel-end">
-        <option>2022-Q1</option><option>2022-Q2</option><option>2022-Q3</option><option>2022-Q4</option>
-        <option>2023-Q1</option><option>2023-Q2</option><option>2023-Q3</option><option>2023-Q4</option>
-        <option>2024-Q1</option><option>2024-Q2</option><option>2024-Q3</option><option>2024-Q4</option>
-        <option>2025-Q1</option><option>2025-Q2</option><option>2025-Q3</option><option>2025-Q4</option>
-        <option selected>2026-Q1</option>
+        <option>2015-Q1</option><option>2015-Q2</option><option>2015-Q3</option><option>2015-Q4</option>
+        <option>2016-Q1</option><option>2016-Q2</option><option>2016-Q3</option><option>2016-Q4</option>
+        <option>2017-Q1</option><option>2017-Q2</option><option>2017-Q3</option><option>2017-Q4</option>
+        <option>2018-Q1</option><option>2018-Q2</option><option>2018-Q3</option><option>2018-Q4</option>
+        <option>2019-Q1</option><option>2019-Q2</option><option>2019-Q3</option><option>2019-Q4</option>
+        <option>2020-Q1</option><option>2020-Q2</option><option>2020-Q3</option><option>2020-Q4</option>
+        <option>2021-Q1</option><option>2021-Q2</option><option>2021-Q3</option><option>2021-Q4</option>
+        <option>2022-Q1</option><option selected>2022-Q2</option>
       </select>
     </div>
 
@@ -54,17 +60,6 @@
     <div class="controls-divider"></div>
 
     <!-- Market segment filters -->
-    <div class="control-group">
-      <label>Property Type</label>
-      <select id="f-type">
-        <option value="all">All Types</option>
-        <option value="single-family">Single Family</option>
-        <option value="condo">Condo</option>
-        <option value="townhouse">Townhouse</option>
-        <option value="multi-family">Multi-Family</option>
-      </select>
-    </div>
-
     <div class="control-group">
       <label>Bedrooms</label>
       <select id="f-beds">
@@ -126,19 +121,11 @@
       </select>
     </div>
 
-    <div class="control-group">
-      <label>Geopolitical Stability</label>
-      <div class="slider-row">
-        <input type="range" id="geo-risk" min="-1" max="1" step="0.1" value="0">
-        <span class="range-val" id="geo-val">Neutral</span>
-      </div>
-    </div>
-
-    <button class="btn" id="run-btn" onclick="runAnalysis()">Run Analysis</button>
+    <button class="btn" id="run-btn">Run Analysis</button>
 
   </div>
 
-  <!-- Active segment banner — only shown when filters are active -->
+  <!-- Active segment banner : only shown when filters are active -->
   <div class="segment-bar" id="segment-bar" style="display:none">
     Filtered view: <span id="segment-desc"></span>
   </div>
@@ -178,61 +165,79 @@
     </div>
     <div class="chart-card">
       <div class="chart-header">
-        <span class="chart-title">Mortgage Rate vs. Unemployment</span>
-        <span class="chart-badge">Macro Factors</span>
+        <span class="chart-title">Forecast Factors</span>
+      </div>
+      <div class="feature-toggles">
+        <button class="feature-chip active" data-feature="mortgage_rate" onclick="toggleMacroFeature('mortgage_rate')">Mortgage Rate</button>
       </div>
       <div class="chart-wrap"><canvas id="macroChart"></canvas></div>
     </div>
   </div>
 
-  <div class="charts-row2">
-    <div class="chart-card">
-      <div class="chart-header">
-        <span class="chart-title">Active Inventory</span>
-        <span class="chart-badge" id="inv-badge">All Types</span>
-      </div>
-      <div class="chart-wrap"><canvas id="invChart"></canvas></div>
+  <!-- Price Predictor -->
+  <div class="predictor-section">
+    <div class="predictor-header">
+      <span class="chart-title">ML Price Predictor</span>
+      <span class="chart-badge" id="api-status">connecting…</span>
     </div>
-    <div class="chart-card">
-      <div class="chart-header">
-        <span class="chart-title">Price vs. Inventory Correlation</span>
-        <span class="chart-badge">Scatter</span>
+    <div class="predictor-body">
+      <div class="predictor-form">
+        <div class="pred-field">
+          <label>Property Type</label>
+          <select id="p-type">
+            <option value="single family">Single Family</option>
+          </select>
+        </div>
+        <div class="pred-field">
+          <label>Bedrooms</label>
+          <input type="number" id="p-beds" value="3" min="1" max="10">
+        </div>
+        <div class="pred-field">
+          <label>Bathrooms</label>
+          <input type="number" id="p-baths" value="2" min="1" max="10" step="0.5">
+        </div>
+        <div class="pred-field">
+          <label>Sq Ft</label>
+          <input type="number" id="p-sqft" value="2000" min="200" max="20000">
+        </div>
+        <div class="pred-field">
+          <label>Year Built</label>
+          <input type="number" id="p-year" value="2000" min="1900" max="2025">
+        </div>
+        <div class="pred-field">
+          <label>Lot Sq Ft</label>
+          <input type="number" id="p-lot" value="6000" min="0">
+        </div>
+        <div class="pred-field">
+          <label>ZIP Code</label>
+          <input type="text" id="p-zip" value="75201" maxlength="5">
+        </div>
+        <div class="pred-field pred-field--check">
+          <label><input type="checkbox" id="p-garage" checked> Garage</label>
+        </div>
       </div>
-      <div class="chart-wrap"><canvas id="scatterChart"></canvas></div>
+      <div class="predictor-result">
+        <button class="btn" id="predict-btn" onclick="runPredict()">Predict Price</button>
+        <div class="pred-output" id="pred-output">
+          <div class="pred-label">Estimated Value</div>
+          <div class="pred-price" id="pred-price">:</div>
+          <div class="pred-note" id="pred-note">Enter property details and click Predict</div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Factor cards -->
   <div class="factors-grid">
-    <div class="factor-card">
-      <div class="factor-name">Population Growth</div>
-      <div class="factor-val" style="color: var(--green)">+2.6% YoY</div>
-      <div class="factor-desc">DFW is one of the fastest-growing metros in the US, which sustains long-term demand.</div>
-    </div>
-    <div class="factor-card">
-      <div class="factor-name">Millennial Buyer Share</div>
-      <div class="factor-val" style="color: var(--accent)">33.8% of buyers</div>
-      <div class="factor-desc">Millennials are the largest homebuying cohort nationally. DFW is a top destination for this group.</div>
-    </div>
-    <div class="factor-card">
+<div class="factor-card">
       <div class="factor-name">Mortgage Rate</div>
-      <div class="factor-val" style="color: var(--red)">6.6% (30yr fixed)</div>
-      <div class="factor-desc">Scenario: Rates Hold. Higher rates reduce purchasing power and suppress prices.</div>
+      <div class="factor-val" id="fc-rate-val" style="color: var(--red)">6.6% (30yr fixed)</div>
+      <div class="factor-desc" id="fc-rate-desc">Scenario: Rates Hold. Higher rates reduce purchasing power and suppress prices.</div>
     </div>
     <div class="factor-card">
-      <div class="factor-name">Unemployment Rate</div>
-      <div class="factor-val" style="color: var(--yellow)">4.1%</div>
-      <div class="factor-desc">Low unemployment in DFW supports sustained buyer demand and price stability.</div>
-    </div>
-    <div class="factor-card">
-      <div class="factor-name">Geopolitical Stability</div>
-      <div class="factor-val" style="color: var(--green)">Neutral (0.0)</div>
-      <div class="factor-desc">Instability can trigger capital flight into hard assets like real estate, or freeze buyer activity.</div>
-    </div>
-    <div class="factor-card">
-      <div class="factor-name">Forecast — End of Period</div>
-      <div class="factor-val" style="color: var(--green)">$406,200</div>
-      <div class="factor-desc">2026-Q2 to 2027-Q1 — upward trend projected</div>
+      <div class="factor-name">Forecast : End of Period</div>
+      <div class="factor-val" id="fc-forecast-val" style="color: var(--green)">$406,200</div>
+      <div class="factor-desc" id="fc-forecast-desc">2026-Q2 to 2027-Q1 : upward trend projected</div>
     </div>
   </div>
 
